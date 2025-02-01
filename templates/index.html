@@ -27,6 +27,12 @@
         .chart-container {
             min-height: 300px;
         }
+        .centered {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -39,20 +45,22 @@
             </button>
         </div>
 
-        <!-- Data Summary Section -->
-        <div class="dashboard-card bg-white p-3 mb-4">
-            <h5 class="mb-3">Data Summary</h5>
-            <div class="row mb-3">
-                <div class="col">
-                    <strong>Total Records:</strong> {{ data_summary.total_rows }}
+        <!-- AI Query Section -->
+        <div class="dashboard-card bg-white p-3 mb-4 centered">
+            <h5>Ask AI Assistant</h5>
+            <form method="post" id="questionForm">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" name="question" 
+                           placeholder="Ask about student performance..." 
+                           value="{{ question }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search me-2"></i>Analyze
+                    </button>
                 </div>
-                <div class="col">
-                    <strong>Columns:</strong> {{ data_summary.columns|join(', ') }}
-                </div>
-            </div>
-            <div class="table-responsive">
-                {{ data_summary.preview | safe }}
-            </div>
+            </form>
+            {% if answer %}
+            <div class="alert alert-info">{{ answer | safe }}</div>
+            {% endif %}
         </div>
 
         <!-- Key Stats -->
@@ -105,24 +113,6 @@
                 </div>
                 {% endfor %}
             </div>
-        </div>
-
-        <!-- AI Query Section -->
-        <div class="dashboard-card bg-white p-3">
-            <h5>Ask AI Assistant</h5>
-            <form method="post" id="questionForm">
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" name="question" 
-                           placeholder="Ask about student performance..." 
-                           value="{{ question }}">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bi bi-search me-2"></i>Analyze
-                    </button>
-                </div>
-            </form>
-            {% if answer %}
-            <div class="alert alert-info">{{ answer | safe }}</div>
-            {% endif %}
         </div>
     </div>
 
