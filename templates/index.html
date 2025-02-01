@@ -49,17 +49,25 @@
         <div class="dashboard-card bg-white p-3 mb-4 centered">
             <h5>Ask AI Assistant</h5>
             <form method="post" id="questionForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" name="question" 
                            placeholder="Ask about student performance..." 
-                           value="{{ question }}">
-                    <button class="btn btn-primary" type="submit">
+                           value="{{ question }}"
+                           maxlength="200"
+                           aria-label="Ask question about student data">
+                    <button class="btn btn-primary" type="submit" id="analyzeBtn">
                         <i class="bi bi-search me-2"></i>Analyze
                     </button>
                 </div>
             </form>
             {% if answer %}
-            <div class="alert alert-info">{{ answer | safe }}</div>
+            <div class="alert alert-info" role="alert">
+                {{ answer | safe }}
+                {% if stats.error %}
+                <div class="text-danger mt-2">⚠️ Dashboard data error - contact support</div>
+                {% endif %}
+            </div>
             {% endif %}
         </div>
 
@@ -83,16 +91,28 @@
 
         <!-- Charts Row -->
         <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-12 col-lg-6">
                 <div class="dashboard-card bg-white p-3">
-                    <h5>Class Performance</h5>
-                    <div class="chart-container" id="classPerformanceChart"></div>
+                    <h5 class="d-flex justify-content-between align-items-center">
+                        Class Performance
+                        <div class="spinner-border text-primary chart-loading" role="status" style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </h5>
+                    <div class="chart-container" id="classPerformanceChart" aria-describedby="chartDesc1"></div>
+                    <div id="chartDesc1" class="visually-hidden">Radar chart showing class performance across subjects</div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-12 col-lg-6">
                 <div class="dashboard-card bg-white p-3">
-                    <h5>Subject Distribution</h5>
-                    <div class="chart-container" id="subjectDistributionChart"></div>
+                    <h5 class="d-flex justify-content-between align-items-center">
+                        Subject Distribution
+                        <div class="spinner-border text-primary chart-loading" role="status" style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </h5>
+                    <div class="chart-container" id="subjectDistributionChart" aria-describedby="chartDesc2"></div>
+                    <div id="chartDesc2" class="visually-hidden">Bar chart comparing average scores across subjects</div>
                 </div>
             </div>
         </div>
@@ -120,6 +140,8 @@
         // Initialize Charts
         document.addEventListener('DOMContentLoaded', function() {
             // Class Performance Chart
+            // Class Performance Chart
+            const classPerfData = JSON.parse('{{ stats.class_performance | tojson | safe }}');
             new ApexCharts(document.querySelector("#classPerformanceChart"), {
                 chart: {
                     type: 'radar',
@@ -127,14 +149,15 @@
                 },
                 series: [{
                     name: 'Average Scores',
-                    data: Object.values({{ stats.class_performance | tojson }})
+                    data: Object.values(classPerfData).map(cls => Object.values(cls).reduce((a, b) => a + b) / 3)
                 }],
                 xaxis: {
-                    categories: Object.keys({{ stats.class_performance | tojson }})
+                    categories: Object.keys(classPerfData)
                 }
             }).render();
 
             // Subject Distribution Chart
+            const subjectAvgs = JSON.parse('{{ stats.subject_averages | tojson | safe }}');
             new ApexCharts(document.querySelector("#subjectDistributionChart"), {
                 chart: {
                     type: 'bar',
@@ -142,10 +165,10 @@
                 },
                 series: [{
                     name: 'Average Score',
-                    data: Object.values({{ stats.subject_averages | tojson }})
+                    data: Object.values(subjectAvgs)
                 }],
                 xaxis: {
-                    categories: Object.keys({{ stats.subject_averages | tojson }})
+                    categories: Object.keys(subjectAvgs)
                 }
             }).render();
         });
