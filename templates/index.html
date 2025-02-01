@@ -1,152 +1,169 @@
--->
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>School AI Query Interface</title>
+    <title>School Analytics Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --accent-color: #4895ef;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-            padding-top: 2rem;
-            transition: all 0.3s ease;
-        }
-        
-        .dark-mode {
-            background-color: #212529;
-            color: #f8f9fa;
-        }
-        
-        .container {
-            max-width: 900px;
-        }
-        
-        .card {
-            border: none;
+        /* Custom CSS for enhanced UI */
+        .dashboard-card {
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 1.5rem;
             transition: transform 0.2s;
         }
-        
-        .card:hover {
+        .dashboard-card:hover {
             transform: translateY(-5px);
         }
-        
-        .card-header {
-            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            font-weight: 600;
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4361ee;
         }
-        
-        .btn-primary {
-            background: var(--primary-color);
-            border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 10px;
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
-        
-        pre {
-            background-color: #e9ecef;
-            padding: 15px;
-            border-radius: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .theme-toggle {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1000;
+        .chart-container {
+            min-height: 300px;
         }
     </style>
 </head>
-<body>
-    <button class="btn btn-outline-primary theme-toggle" onclick="toggleTheme()">
-        <i class="bi bi-moon-fill"></i>
-    </button>
-    
-    <div class="container">
-        <h1 class="display-4 text-center mb-5">School AI Project</h1>
-        
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-database-fill me-2"></i>Data Summary
+<body class="bg-light">
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>School Analytics Dashboard</h1>
+            <button class="btn btn-outline-primary" onclick="toggleTheme()">
+                <i class="bi bi-moon-fill"></i>
+            </button>
+        </div>
+
+        <!-- Data Summary Section -->
+        <div class="dashboard-card bg-white p-3 mb-4">
+            <h5 class="mb-3">Data Summary</h5>
+            <div class="row mb-3">
+                <div class="col">
+                    <strong>Total Records:</strong> {{ data_summary.total_rows }}
+                </div>
+                <div class="col">
+                    <strong>Columns:</strong> {{ data_summary.columns|join(', ') }}
+                </div>
             </div>
-            <div class="card-body">
-                <pre class="mb-0">{{ data_summary }}</pre>
+            <div class="table-responsive">
+                {{ data_summary.preview | safe }}
             </div>
         </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-question-circle-fill me-2"></i>Ask a Question
+
+        <!-- Key Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="dashboard-card bg-white p-3">
+                    <h6 class="text-muted">Total Students</h6>
+                    <div class="stat-number">{{ stats.total_students }}</div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="post" id="questionForm">
-                    <div class="form-group mb-3">
-                        <label for="question" class="form-label">Enter your question:</label>
-                        <textarea name="question" id="question" rows="3" 
-                                class="form-control" 
-                                placeholder="e.g., Who is the best student in mathematics?">{{ question }}</textarea>
+            {% for subject, avg in stats.subject_averages.items() %}
+            <div class="col-md-3">
+                <div class="dashboard-card bg-white p-3">
+                    <h6 class="text-muted">{{ subject }} Average</h6>
+                    <div class="stat-number">{{ avg }}%</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="dashboard-card bg-white p-3">
+                    <h5>Class Performance</h5>
+                    <div class="chart-container" id="classPerformanceChart"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="dashboard-card bg-white p-3">
+                    <h5>Subject Distribution</h5>
+                    <div class="chart-container" id="subjectDistributionChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div class="dashboard-card bg-white p-3 mb-4">
+            <h5>Top Performers</h5>
+            <div class="row">
+                {% for student in stats.top_performers %}
+                <div class="col-md-4">
+                    <div class="top-performer">
+                        <h6>{{ student.Name }}</h6>
+                        <small>Class {{ student.Class }}</small>
+                        <div>Math: {{ student.Marks_Math }}%</div>
+                        <div>Science: {{ student.Marks_Science }}%</div>
+                        <div>English: {{ student.Marks_English }}%</div>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-send-fill me-2"></i>Ask AI
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- AI Query Section -->
+        <div class="dashboard-card bg-white p-3">
+            <h5>Ask AI Assistant</h5>
+            <form method="post" id="questionForm">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" name="question" 
+                           placeholder="Ask about student performance..." 
+                           value="{{ question }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search me-2"></i>Analyze
                     </button>
-                </form>
-            </div>
+                </div>
+            </form>
+            {% if answer %}
+            <div class="alert alert-info">{{ answer | safe }}</div>
+            {% endif %}
         </div>
-        
-        <div class="loading">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-3">Analyzing data...</p>
-        </div>
-        
-        {% if answer %}
-        <div class="card answer-card">
-            <div class="card-header">
-                <i class="bi bi-robot me-2"></i>AI Answer
-            </div>
-            <div class="card-body">
-                <div class="card-text">{{ answer | safe }}</div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Initialize Charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Class Performance Chart
+            new ApexCharts(document.querySelector("#classPerformanceChart"), {
+                chart: {
+                    type: 'radar',
+                    height: 300
+                },
+                series: [{
+                    name: 'Average Scores',
+                    data: Object.values({{ stats.class_performance | tojson }})
+                }],
+                xaxis: {
+                    categories: Object.keys({{ stats.class_performance | tojson }})
+                }
+            }).render();
+
+            // Subject Distribution Chart
+            new ApexCharts(document.querySelector("#subjectDistributionChart"), {
+                chart: {
+                    type: 'bar',
+                    height: 300
+                },
+                series: [{
+                    name: 'Average Score',
+                    data: Object.values({{ stats.subject_averages | tojson }})
+                }],
+                xaxis: {
+                    categories: Object.keys({{ stats.subject_averages | tojson }})
+                }
+            }).render();
+        });
+
+        // Theme Toggle
         function toggleTheme() {
             document.documentElement.setAttribute('data-bs-theme', 
                 document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
-            document.body.classList.toggle('dark-mode');
-        }
-
-        document.getElementById('questionForm').onsubmit = function() {
-            document.querySelector('.loading').style.display = 'block';
         }
     </script>
 </body>
