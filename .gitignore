@@ -1,13 +1,25 @@
-# Ignore Python cache files
 __pycache__/
-*.pyc
-
-# Ignore virtual environment folder
+*.py[cod]
+*.class
+*.so
+.Python
 env/
-venv/
-
-# Ignore environment variables
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 .env
-
-# Ignore log files
-*.log
+venv/
+.venv/
+.idea/
+.vscode/
